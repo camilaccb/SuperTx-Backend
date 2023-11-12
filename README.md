@@ -2,7 +2,7 @@
 Projeto backend da sprint de **Desenvolvimento Full Stack Básico** do [curso de pós graduação de Engenharia de Sofware da PUC Rio](https://especializacao.ccec.puc-rio.br/especializacao/engenharia-de-software).
 
 ## Objetivo do projeto
-Sistema web que possibilita encontrar mentores na área de tecnologia. Permite o cadastro de mentores, a visualização,atualização e deleção de dados dos mentores.
+Sistema web que possibilita encontrar mentores na área de tecnologia. Permite o cadastro, a visualização,atualização e deleção de dados dos mentores.
 
 ## Como executar
 Para executar o projeto, siga os passos:
