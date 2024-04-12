@@ -1,8 +1,8 @@
-# BuddyConnect
+# SuperTx
 Projeto backend da sprint de **Desenvolvimento Full Stack Básico** do [curso de pós graduação de Engenharia de Sofware da PUC Rio](https://especializacao.ccec.puc-rio.br/especializacao/engenharia-de-software).
 
 ## Objetivo do projeto
-Sistema web que possibilita encontrar mentores na área de tecnologia. Permite o cadastro, a visualização,atualização e deleção de dados dos mentores.
+Sistema web que possibilita o gerencialmento do corridas de taxi. Permite o cadastro, a visualização,atualização e deleção de corridas. Caso queira entender um pouco mais da motivaçao do projeto, veja esse [documento](https://github.com/camilaccb/BuddyConnect-Backend/blob/main/motivacao-projeto.md).
 
 ## Como executar
 Para executar o projeto, siga os passos:

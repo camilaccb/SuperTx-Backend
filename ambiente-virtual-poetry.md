@@ -1,6 +1,6 @@
 # Passo a passo para criar ambiente virtual usando Poetry
 
-1.Instalar o poetry usando o pip
+1. Instalar o poetry usando o pip
 ```bash
 poetry install
 ```
