@@ -4,19 +4,18 @@ API da aplicação que utiliza a lib flask-openapi3 para gerar a documentação 
 """
 
 from flask_openapi3 import OpenAPI, Info, Tag
-from flask import redirect
-
+from flask import redirect,jsonify
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy import func
+from datetime import datetime, timedelta
 
-
-from model import Session, Corrida, Abastecimento
+from model import Session, Corridas, Clientes
 from logger import logger
 from schemas import *
 from flask_cors import CORS
 
-
 # Inclui metadados da API
-info = Info(title="BuddyConnect API", version="1.0.0")
+info = Info(title="SuperTx API", version="1.0.0")
 app = OpenAPI(__name__, info = info)
 
 #Permite que outras origens realizem solicitações as rotas
@@ -25,8 +24,7 @@ CORS(app)
 # Definindo tags
 home_tag = Tag(name="Documentação", description="Seleção de documentação: Swagger, Redoc ou RapiDoc")
 corridas_tag = Tag(name="Corridas", description="Adição, visualização, atualização e deleção de uma corrida")
-abastecimento_tag = Tag(name="Abastecimento", description="Adição de abastecimento")
-
+clientes_tag = Tag(name="Clientes", description="Adição, visualização, atualização e deleção de clientes")
 
 # Rotas da API (endpoints, paths, views)
 @app.get('/', tags=[home_tag])
@@ -43,86 +41,148 @@ def add_corrida(form: CorridaSchema):
 
     Retorna uma representação da corrida inserida na base
     """
-    corrida = Corrida(
-        cliente = form.cliente,
-        tipo_corrida = form.tipo_corrida,
-        valor_corrida = form.valor_corrida
-    )
-    # Identifica a bandeira, calcula a quilometragem
-    corrida.identificar_bandeira()
-    corrida.calcular_quilometragem()
-
-    # Iniciando a sessão com o banco para conseguir realizar consulta de último abastecimento
-    session = Session()
-
-    # Identifica último abastecimento e atualiza instância da corrida
-    ultimo_abastecimento = session.query(Abastecimento).order_by(Abastecimento.id.desc()).first()
-    if ultimo_abastecimento:
-        logger.debug(f"Último abastecimento encontrado foi o do dia: '{ultimo_abastecimento.hora_abastecimento}'")
-        corrida.calcular_gasto_combustivel(ultimo_abastecimento)
-    else:
-        # Último abastecimento não encontrado
-        error_msg = "Último abastecimento não encontrado na base :/"
-        logger.warning(f"Erro ao buscar último abastecimento, {error_msg}")
-        return {"mesage": error_msg}, 404
-
     
-    logger.debug(f"Adicionando corrida do cliente: {corrida.cliente}")
+    id_cliente = form.id_cliente
+
+    # Iniciando a sessão com o banco para adicionar a corrida
+    session = Session()
+    
+    
+    # Verifica se a corrida é de um cliente já cadastrado
+    cliente = session.query(Clientes).filter_by(cpf_cliente = id_cliente).first() 
+
+    # Retorna erro caso cliente não esteja cadastrado
+    if not cliente:
+        error_msg = "Cliente não cadastrado"
+        logger.warning(error_msg)
+        return {"mensagem": error_msg}, 409 
+        
+    
+    corrida = Corridas(
+    id_cliente = form.id_cliente,
+    tipo_corrida = form.tipo_corrida,
+    valor_corrida = form.valor_corrida
+    )
+
     try:
         # adicionando corrida
         session.add(corrida)
         # efetivando o camando de adição de novo item na tabela
         session.commit()
-        logger.debug(f"Adicionado corrida do cliente: {corrida.cliente}")
+        logger.debug(f"Adicionado corrida")
         return apresenta_corrida(corrida), 200
 
     except IntegrityError as e:
-        # como a duplicidade da chave  cliente e datetime é a provável razão do IntegrityError
         error_msg = "Corrida já salva na base"
-        logger.warning(f"Erro ao adicionar corrida do cliente '{corrida.cliente}', {error_msg}")
+        logger.warning(f"Corrida já adicionada")
         return {"mensagem": error_msg}, 409
 
     except Exception as e:
-        # caso um erro fora do previsto
         error_msg = "Não foi possível salvar nova corrida :/"
-        logger.warning(f"Erro ao adicionar mentor '{corrida.cliente}', {error_msg}")
+        logger.warning(f"Erro ao adicionar corrida: {error_msg}")
         return {"mesage": error_msg}, 400
 
-
-@app.post('/abastecimentos', tags=[abastecimento_tag],
-          responses={"200": AbastecimentoSchema , "409": ErrorSchema, "400": ErrorSchema})
-def add_abastecimento(form: AbastecimentoSchema):
+@app.post('/clientes', tags=[clientes_tag],
+          responses={"200": ClienteViewSchema, "409": ErrorSchema, "400": ErrorSchema})
+def add_cliente(form: ClienteSchema):
     """
-    Adiciona um novo abastecimento na base
+    Adiciona uma novo cliente na base
 
-    Retorna uma representação do abastecimento inserido na base
+    Retorna uma representação do cliente que foi cadastrado
     """
-    abastecimento = Abastecimento(
-        tipo_combustível= form.tipo_combustivel,
-        valor_por_litro = form.valor_por_litro,
-        valor_total_abastecimento= form.valor_total_abastecimento
+
+    cliente = Clientes(
+    cpf_cliente = form.cpf_cliente,
+    nome = form.nome,
+    telefone = form.telefone
     )
-    
-    logger.debug(f"Adicionando o abastecimento do dia : {abastecimento.hora_abastecimento}")
+
+    # Iniciando a sessão com o banco para adicionar o cliente
+    session = Session()
+
     try:
-        # Iniciando a sessão com o banco
-        session = Session()
-        # adicionando no abastecimento
-        session.add(abastecimento)
-        # efetivando o camando de adição de novo item na tabela
+        # adicionando cliente
+        session.add(cliente)
+        # efetivando o camando de adição de novo item na tabela de cliente
         session.commit()
-        logger.debug(f"Adicionado o abastecimento do dia: {abastecimento.hora_abastecimento}")
-        return apresenta_abastecimento(abastecimento), 200
+        logger.debug(f"Adicionado cliente")
+        return apresenta_cliente(cliente), 200
 
     except IntegrityError as e:
-        # como a duplicidade da chave  cliente e datetime é a provável razão do IntegrityError
-        error_msg = "Abastecimento já salvo na base"
-        logger.warning(f"Erro ao adicionar abastecimento do dia '{abastecimento.hora_abastecimento}', {error_msg}")
+        error_msg = "Cliente já salvo na base"
+        logger.warning(f"Corrida já cadastrado")
         return {"mensagem": error_msg}, 409
 
     except Exception as e:
-        # caso um erro fora do previsto
-        error_msg = "Não foi possível salvar novo abastecimento :/"
-        logger.warning(f"Erro ao adicionar abastecimento do dia '{abastecimento.hora_abastecimento}', {error_msg}")
+        error_msg = "Não foi possível cadastrar o cliente :/"
+        logger.warning(f"Erro ao cadastrar o cliente: {error_msg}")
         return {"mesage": error_msg}, 400
     
+
+@app.delete('/clientes', tags=[clientes_tag],
+            responses={"200": ClienteDelSchema, "409": ErrorSchema, "400": ErrorSchema})
+def del_cliente(query: ClienteBuscaSchema):
+    """Deleta um cliente a partir do cpf informado
+
+    Retorna uma mensagem de confirmação da remoção.
+    """
+    cpf_cliente_deletar = query.cpf
+    logger.debug(f"Deletando dados do cliente com cpf: {cpf_cliente_deletar}")
+    
+    # criando conexão com a base
+    session = Session()
+    
+    # Verificando se o cliente possui corridas
+    qtd_corridas = session.query(Corridas).filter(Corridas.id_cliente == cpf_cliente_deletar).count()
+
+    # Retornar erro caso o cliente tenha corridas cadastradas
+    if qtd_corridas:
+        error_msg = "O cliente possui corridas associadas e não pode ser removido."
+        logger.warning(f"Erro ao deletar cliente com cpf #{cpf_cliente_deletar}, {error_msg}")
+        return {"message": error_msg}, 409
+    
+    # fazendo a remoção
+    count = session.query(Clientes).filter(Clientes.cpf_cliente == cpf_cliente_deletar).delete()
+    session.commit()
+
+    if count:
+        # retorna a representação da mensagem de confirmação
+        logger.debug(f"Deletado cliente com cpf #{cpf_cliente_deletar}")
+        return {"mesage": "Cliente removido", "cpf": cpf_cliente_deletar}
+    else:
+        # se o cliente não foi encontrado
+        error_msg = "Cliente não encontrado na base :/"
+        logger.warning(f"Erro ao deletar cliente com cpf #'{cpf_cliente_deletar}', {error_msg}")
+        return {"mesage": error_msg}, 404
+    
+
+@app.get('/clientes', tags=[clientes_tag],
+        responses={"200": ClienteRecorrenteSchema, "409": ErrorSchema, "400": ErrorSchema})
+def recupera_clientes_recorrentes():
+    """
+    Retorna os clientes mais recorrentes e valiosos
+    """
+    # criando conexão com a base
+    session = Session()
+
+    ultimo_mes = datetime.now() - timedelta(days=30)
+
+    #Executa query
+    resultado_clientes_valiosos = session.query(Clientes.nome, func.sum(Corridas.valor_corrida).label('total_gasto')) \
+                                    .join(Corridas) \
+                                    .filter(Corridas.hora_registro_corrida >= ultimo_mes) \
+                                    .group_by(Clientes.nome) \
+                                    .order_by(func.sum(Corridas.valor_corrida).desc()) \
+                                    .all()
+    
+    clientes_valiosos = []
+    
+    for cliente_valioso in resultado_clientes_valiosos:
+        nome_cliente, total_gasto = cliente_valioso
+        cliente_valioso_info = {
+            "nome_cliente": nome_cliente,
+            "total_gasto": total_gasto
+        }
+        clientes_valiosos.append(cliente_valioso_info)
+    
+    return jsonify(clientes_valiosos)

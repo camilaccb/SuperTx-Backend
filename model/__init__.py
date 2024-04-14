@@ -10,8 +10,8 @@ import os
 
 # Importando os elementos definidos no modelo
 from model.base import Base
-from model.corrida import Corrida
-from model.abastecimento import Abastecimento
+from model.corrida import Corridas
+from model.clientes import Clientes
 
 db_path = "database/"
 # Verifica se o diretorio não existe

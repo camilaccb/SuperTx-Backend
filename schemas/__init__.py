@@ -1,3 +1,3 @@
-from schemas.corrida import CorridaSchema, CorridaViewSchema, apresenta_corrida
-from schemas.abastecimento import AbastecimentoSchema, apresenta_abastecimento
+from schemas.corridas import CorridaSchema, CorridaViewSchema, apresenta_corrida
+from schemas.clientes import ClienteSchema, ClienteViewSchema, ClienteBuscaSchema, ClienteDelSchema, apresenta_cliente, ClienteRecorrenteSchema, ClienteValioso
 from schemas.error import ErrorSchema
