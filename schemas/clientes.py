@@ -33,7 +33,6 @@ class ClienteSchema(BaseModel):
                 return v
         raise ValueError("Formato invalido para número de telefone ou DDD inválido")
 
-
 class ClienteViewSchema(BaseModel):
 
     """ 
@@ -66,7 +65,7 @@ class ClienteBuscaSchema(BaseModel):
 
     @validator('cpf')
     def verificar_cpf(cls,v):
-        if not re.search("[0-9]",v):
+        if  re.search("[0-9]",v):
             return v
         else:
             raise("O cpf deve conter apenas números")

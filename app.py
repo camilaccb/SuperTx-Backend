@@ -4,7 +4,7 @@ API da aplicação que utiliza a lib flask-openapi3 para gerar a documentação 
 """
 
 from flask_openapi3 import OpenAPI, Info, Tag
-from flask import redirect,jsonify
+from flask import redirect
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
 from datetime import datetime, timedelta
@@ -184,5 +184,6 @@ def recupera_clientes_recorrentes():
             "total_gasto": total_gasto
         }
         clientes_valiosos.append(cliente_valioso_info)
-    
-    return jsonify(clientes_valiosos)
+
+    return clientes_valiosos,200
+   
